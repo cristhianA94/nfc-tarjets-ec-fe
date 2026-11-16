@@ -61,7 +61,7 @@ describe("public NFC handler", () => {
   });
   it("blocks a corrupted or unsafe active target", async () => {
     rpc.mockResolvedValue({
-      data: [{ status: "ACTIVE", google_review_url: "https://evil.com" }],
+      data: [{ status: "ACTIVE", google_review_url: "javascript:alert(1)" }],
     });
     expect((await run()).headers.get("location")).toBe(
       "https://nfc.example/no-disponible",
@@ -73,4 +73,17 @@ describe("public NFC handler", () => {
     rpc.mockRejectedValue(new Error("offline"));
     expect((await run()).status).toBe(503);
   });
+});
+
+it.each([
+  "https://example.com/menu?name=a%20b#section",
+  "http://example.org:8080/path",
+])("redirects an active card to any web domain: %s", async (url) => {
+  rpc.mockResolvedValue({
+    data: [{ status: "ACTIVE", google_review_url: url }],
+  });
+  const res = await run();
+  expect(res.status).toBe(302);
+  expect(res.headers.get("location")).toBe(url);
+  expect(res.headers.get("cache-control")).toContain("no-store");
 });

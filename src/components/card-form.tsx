@@ -1,23 +1,28 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/private-link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, dateLabel } from "@/lib/client-api";
 import { type Card, type CardStatus, statusLabels } from "@/lib/types";
+import { ClientPicker } from "./client-picker";
 import { CopyUrl } from "./copy-url";
 import { StatusBadge } from "./status-badge";
 import { Icon } from "./icon";
 export function CardForm({
   initial,
   baseUrl,
+  initialClientId,
 }: {
   initial?: Card;
   baseUrl: string;
+  initialClientId?: string;
 }) {
   const router = useRouter();
   const [card, setCard] = useState(initial);
-  const [business, setBusiness] = useState(initial?.business_name ?? "");
-  const [url, setUrl] = useState(initial?.google_review_url ?? "");
+  const [clientId, setClientId] = useState(
+    initial?.client_id ?? initialClientId ?? "",
+  );
+  const [label, setLabel] = useState(initial?.label ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [status, setStatus] = useState<CardStatus>(
     initial?.status ?? "AVAILABLE",
@@ -35,7 +40,7 @@ export function CardForm({
     const intent = (event.nativeEvent as SubmitEvent)
       .submitter as HTMLButtonElement | null;
     const nextStatus = intent?.value === "activate" ? "ACTIVE" : status;
-    const fields = { business_name: business, google_review_url: url, notes };
+    const fields = { client_id: clientId || null, label, notes };
     try {
       const result = await api<{ card: Card }>(
         card ? "/api/admin/cards/" + card.public_code : "/api/admin/cards",
@@ -56,7 +61,6 @@ export function CardForm({
             : "Tarjeta creada. Copia su URL para programar el NFC.",
       );
       if (!card) router.replace("/admin/tarjetas/" + result.card.public_code);
-      router.refresh();
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "No se pudo guardar la tarjeta.",
@@ -73,7 +77,6 @@ export function CardForm({
       await api("/api/admin/cards/" + card.public_code, { method: "DELETE" });
       dialog.current?.close();
       router.replace("/admin/tarjetas");
-      router.refresh();
     } catch (e) {
       dialog.current?.close();
       setError(
@@ -110,40 +113,20 @@ export function CardForm({
             </span>
           </div>
           <div className="form-body">
+            <ClientPicker
+              value={clientId}
+              onChange={setClientId}
+              initialName={initial?.business_name}
+            />
             <label>
-              Nombre del negocio
-              <span className="optional">
-                {card ? "Requerido para activar" : "Opcional"}
-              </span>
+              Identificación de la tarjeta
+              <span className="optional">Opcional: Mesa 1, Terraza, Caja…</span>
               <input
-                name="business_name"
-                value={business}
-                onChange={(e) => setBusiness(e.target.value)}
-                maxLength={160}
-                placeholder="Ej. Cafetería Central"
-                autoComplete="organization"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                maxLength={80}
+                placeholder="Ej. Mesa 1"
               />
-            </label>
-            <label>
-              Enlace de Google Reviews
-              <span className="optional">
-                {card ? "Requerido para activar" : "Opcional"}
-              </span>
-              <input
-                name="google_review_url"
-                type="url"
-                inputMode="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                maxLength={2048}
-                placeholder="https://g.page/r/…/review"
-                spellCheck={false}
-              />
-              <span className="field-help">
-                Enlaces admitidos: g.page/r/…/review,
-                search.google.com/local/writereview?placeid=… y
-                maps.app.goo.gl/…
-              </span>
             </label>
             {card && (
               <label>
@@ -161,8 +144,8 @@ export function CardForm({
                     ))}
                 </select>
                 <span className="field-help">
-                  Suspender conserva los datos y detiene la redirección a
-                  Google.
+                  Suspender conserva los datos y detiene la redirección a el
+                  destino.
                 </span>
               </label>
             )}

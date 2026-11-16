@@ -3,7 +3,7 @@ export default function NotFound() {
   return (
     <main className="public-page">
       <div className="public-content">
-        <span className="eyebrow">404 · NFC</span>
+        <span className="eyebrow">404 · NexTap</span>
         <h1>No encontramos esta tarjeta.</h1>
         <p>
           Comprueba el código o contacta con la persona que te entregó la

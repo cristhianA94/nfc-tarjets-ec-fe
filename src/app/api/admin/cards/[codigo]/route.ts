@@ -32,7 +32,11 @@ export async function PATCH(request: Request, context: Context) {
       .eq("public_code", code)
       .select(cardColumns)
       .maybeSingle();
-    if (error) throw new HttpError(503, "No se pudo guardar la tarjeta.");
+    if (error)
+      throw new HttpError(
+        error.code === "23503" || error.code === "23514" ? 400 : 503,
+        "No se pudo guardar. Para activar, el cliente debe tener un enlace de destino válido.",
+      );
     if (!data)
       throw new HttpError(404, "No existe una tarjeta con ese código.");
     return json({ card: data });

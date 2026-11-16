@@ -1,7 +1,13 @@
+import { z } from "zod";
 import { requireAdmin, HttpError } from "@/lib/auth";
 import { assertSameOrigin, failure, json, readJson } from "@/lib/http";
 import { createCardSchema, pageNumber } from "@/lib/validation";
-import { cardColumns, statuses, type CardStatus } from "@/lib/types";
+import {
+  cardColumns,
+  cardListColumns,
+  statuses,
+  type CardStatus,
+} from "@/lib/types";
 export async function GET(request: Request) {
   try {
     const { client } = await requireAdmin();
@@ -10,15 +16,19 @@ export async function GET(request: Request) {
     const search = (p.get("q") ?? "").trim();
     if (search.length > 160)
       throw new HttpError(400, "La búsqueda es demasiado larga.");
-    let query = client.from("cards").select(cardColumns, { count: "exact" });
+    let query = client
+      .from("cards")
+      .select(cardListColumns, { count: "exact" });
     if (search) {
       // Strip PostgREST filter punctuation; wildcard characters are literal search input.
       const safe = search.replace(/[,().%_*\\\"]/g, " ").trim();
       if (safe)
         query = query.or(
-          `public_code.ilike.%${safe}%,business_name.ilike.%${safe}%`,
+          `public_code.ilike.%${safe}%,business_name.ilike.%${safe}%,label.ilike.%${safe}%`,
         );
     }
+    const clientId = p.get("client_id");
+    if (clientId) query = query.eq("client_id", z.uuid().parse(clientId));
     const status = p.get("status");
     if (status) {
       if (!statuses.includes(status as CardStatus))
@@ -53,7 +63,10 @@ export async function POST(request: Request) {
         .single();
       if (!error) return json({ card: data }, 201);
       if (error.code !== "23505")
-        throw new HttpError(503, "No se pudo crear la tarjeta.");
+        throw new HttpError(
+          error.code === "23503" || error.code === "23514" ? 400 : 503,
+          "No se pudo crear la tarjeta. Comprueba el cliente seleccionado.",
+        );
     }
     throw new HttpError(
       503,

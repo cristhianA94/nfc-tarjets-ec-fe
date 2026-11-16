@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/private-link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Brand } from "./brand";
@@ -42,12 +42,26 @@ export function AdminShell({
         <Link
           className="brand-link"
           href="/admin/tarjetas"
-          aria-label="NFC, tarjetas"
+          aria-label="NexTap, tarjetas"
         >
           <Brand />
         </Link>
         <div className="nav-label">ADMINISTRACIÓN</div>
         <nav aria-label="Navegación principal">
+          <Link
+            href="/admin/clientes"
+            className={
+              path.startsWith("/admin/clientes")
+                ? "nav-link selected"
+                : "nav-link"
+            }
+            aria-current={
+              path.startsWith("/admin/clientes") ? "page" : undefined
+            }
+          >
+            <Icon name="cards" />
+            Clientes
+          </Link>
           <Link
             className={
               path.startsWith("/admin/tarjetas")
@@ -108,7 +122,8 @@ export function AdminShell({
           {children}
         </main>
         <footer className="app-footer">
-          NFC · Gestión de tarjetas<span>Simple. Directo. Sin contacto.</span>
+          NexTap · Gestión de tarjetas
+          <span>Simple. Directo. Sin contacto.</span>
         </footer>
       </div>
     </div>

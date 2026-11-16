@@ -1,28 +1,20 @@
 import { z } from "zod";
 import { statuses } from "./types";
 
-// Exact hosts and paths, shared by writes and the public redirect handler.
-export function validReviewUrl(value: string): boolean {
+// Shared URL syntax validation; destinations are not restricted by domain.
+export function validDestinationUrl(value: string): boolean {
   try {
-    if (value.length > 2048) return false;
-    const u = new URL(value);
-    if (u.protocol !== "https:" || u.username || u.password || u.port || u.hash)
+    if (
+      value.length > 2048 ||
+      Array.from(value).some(
+        (c) => c.charCodeAt(0) <= 32 || c.charCodeAt(0) === 127,
+      )
+    )
       return false;
-    if (u.hostname === "g.page")
-      return /^\/r\/[A-Za-z0-9_-]+\/review\/?$/.test(u.pathname) && !u.search;
-    if (u.hostname === "search.google.com") {
-      return (
-        u.pathname === "/local/writereview" &&
-        /^[A-Za-z0-9_-]+$/.test(u.searchParams.get("placeid") ?? "") &&
-        [...u.searchParams.keys()].length === 1
-      );
-    }
-    if (u.hostname === "maps.app.goo.gl")
-      return (
-        /^\/[A-Za-z0-9_-]+\/?$/.test(u.pathname) &&
-        (!u.search || /^\?g_st=[A-Za-z0-9_-]+$/.test(u.search))
-      );
-    return false;
+    const u = new URL(value);
+    return (
+      (u.protocol === "http:" || u.protocol === "https:") && Boolean(u.hostname)
+    );
   } catch {
     return false;
   }
@@ -39,19 +31,33 @@ const nullableText = (max: number) =>
 export const codeSchema = z
   .string()
   .regex(/^[A-Z0-9]{6,16}$/, "Código de tarjeta inválido.");
+export const clientSchema = z
+  .object({
+    business_name: z
+      .string()
+      .trim()
+      .min(1, "Introduce el nombre del negocio.")
+      .max(160),
+    google_review_url: nullableText(2048)
+      .refine(
+        (v) => v === null || validDestinationUrl(v),
+        "Introduce una URL completa HTTP o HTTPS válida.",
+      )
+      .transform((v) => {
+        if (!v) return null;
+        const u = new URL(v);
+        return u.href;
+      }),
+    notes: nullableText(2000),
+  })
+  .strict();
 const fields = {
-  business_name: nullableText(160),
-  google_review_url: nullableText(2048)
-    .refine(
-      (v) => v === null || validReviewUrl(v),
-      "Utiliza un enlace HTTPS de reseñas admitido: g.page/r/…/review, search.google.com/local/writereview?placeid=… o maps.app.goo.gl/…",
-    )
-    .transform((v) => {
-      if (!v) return null;
-      const u = new URL(v);
-      if (u.search) u.search = u.searchParams.toString();
-      return u.href;
-    }),
+  client_id: z
+    .uuid("Cliente inválido.")
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  label: nullableText(80),
   notes: nullableText(2000),
 };
 export const createCardSchema = z.object(fields).strict();
@@ -59,16 +65,12 @@ export const updateCardSchema = z
   .object({ ...fields, status: z.enum(statuses) })
   .strict()
   .superRefine((data, ctx) => {
-    if (
-      data.status === "ACTIVE" &&
-      (!data.business_name || !data.google_review_url)
-    ) {
+    if (data.status === "ACTIVE" && !data.client_id)
       ctx.addIssue({
         code: "custom",
         message:
-          "Para activar, introduce el nombre del negocio y su enlace de Google Reviews.",
+          "Selecciona un cliente con enlace de destino para activar la tarjeta.",
       });
-    }
   });
 const date = z
   .string()

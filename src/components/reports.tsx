@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/private-link";
 import { api, dateLabel } from "@/lib/client-api";
 import type { Report } from "@/lib/types";
 import { StatusBadge } from "./status-badge";

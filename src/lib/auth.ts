@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { serverClient } from "./supabase/server";
 
 export class HttpError extends Error {
@@ -9,14 +10,16 @@ export class HttpError extends Error {
     super(message);
   }
 }
-export async function requireAdmin() {
+export const requireAdmin = cache(async () => {
   const client = await serverClient();
-  const {
-    data: { user },
-    error,
-  } = await client.auth.getUser();
-  if (error || !user)
+  const { data, error } = await client.auth.getClaims();
+  const claims = data?.claims;
+  if (error || typeof claims?.sub !== "string")
     throw new HttpError(401, "Tu sesión ha caducado. Inicia sesión de nuevo.");
+  const user = {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : undefined,
+  };
   const { data: admin, error: adminError } = await client
     .from("admin_users")
     .select("user_id")
@@ -30,4 +33,4 @@ export async function requireAdmin() {
   if (!admin)
     throw new HttpError(403, "Esta cuenta no tiene acceso de administrador.");
   return { client, user };
-}
+});

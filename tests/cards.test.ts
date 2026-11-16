@@ -54,8 +54,8 @@ describe("administrative card handlers", () => {
     const res = await create(request("POST", { notes: "Nueva" }));
     expect(res.status).toBe(201);
     expect(m.insert).toHaveBeenCalledWith({
-      business_name: null,
-      google_review_url: null,
+      client_id: null,
+      label: null,
       notes: "Nueva",
       status: "AVAILABLE",
     });
@@ -73,12 +73,15 @@ describe("administrative card handlers", () => {
       data: { public_code: code, status: "ACTIVE" },
     });
     const input = {
-      business_name: "Negocio",
-      google_review_url: "https://g.page/r/Local/review",
+      client_id: "11111111-1111-4111-8111-111111111111",
       status: "ACTIVE",
     };
     expect((await PATCH(request("PATCH", input), ctx)).status).toBe(200);
-    expect(m.update).toHaveBeenCalledWith({ ...input, notes: null });
+    expect(m.update).toHaveBeenCalledWith({
+      ...input,
+      label: null,
+      notes: null,
+    });
     expect(m.eq).toHaveBeenCalledWith("public_code", code);
   });
   it("validates activation and immutable fields before reaching the database", async () => {
