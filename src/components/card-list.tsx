@@ -124,6 +124,7 @@ export function CardList({ clientId }: { clientId?: string }) {
             ))}
           </select>
           <button className="secondary" type="submit">
+            <Icon name="search" size={18} />
             Buscar
           </button>
         </form>
@@ -135,6 +136,7 @@ export function CardList({ clientId }: { clientId?: string }) {
               className="secondary"
               onClick={() => setReload((n) => n + 1)}
             >
+              <Icon name="reset" size={18} />
               Volver a intentar
             </button>
           </div>
@@ -165,6 +167,7 @@ export function CardList({ clientId }: { clientId?: string }) {
                   (clientId ? "?client_id=" + clientId : "")
                 }
               >
+                <Icon name="plus" size={18} />
                 Crear primera tarjeta
               </Link>
             )}
@@ -235,6 +238,7 @@ export function CardList({ clientId }: { clientId?: string }) {
                     setFilter({ ...filter, page: filter.page - 1 })
                   }
                 >
+                  <Icon name="previous" size={18} />
                   Anterior
                 </button>
                 <button
@@ -245,6 +249,7 @@ export function CardList({ clientId }: { clientId?: string }) {
                   }
                 >
                   Siguiente
+                  <Icon name="arrow" size={18} />
                 </button>
               </div>
             </div>

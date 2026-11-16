@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "./icon";
 import { useEffect, useState } from "react";
 import Link from "@/components/private-link";
 import { api } from "@/lib/client-api";
@@ -64,7 +65,10 @@ export function Clients() {
             onChange={(e) => setSearch(e.target.value)}
             maxLength={160}
           />
-          <button>Buscar</button>
+          <button>
+            <Icon name="search" size={18} />
+            Buscar
+          </button>
         </form>
         {error ? (
           <p className="notice error" role="alert">
@@ -120,6 +124,7 @@ export function Clients() {
                     setFilter({ ...filter, page: filter.page - 1 })
                   }
                 >
+                  <Icon name="previous" size={18} />
                   Anterior
                 </button>
                 <button
@@ -130,6 +135,7 @@ export function Clients() {
                   }
                 >
                   Siguiente
+                  <Icon name="arrow" size={18} />
                 </button>
               </div>
             </div>

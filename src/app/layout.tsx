@@ -25,7 +25,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
+    // Tolerate externally injected root attributes; keep descendant checks enabled.
+    <html lang="es" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

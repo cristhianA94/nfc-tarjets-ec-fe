@@ -176,8 +176,8 @@ export function CardForm({
           </div>
           <div className="form-actions">
             <button disabled={busy}>
+              <Icon name={card ? "save" : "plus"} size={18} />
               {busy ? "Guardando…" : card ? "Guardar cambios" : "Crear tarjeta"}
-              <Icon name="arrow" size={16} />
             </button>
             {card && card.status !== "ACTIVE" && (
               <button
@@ -186,6 +186,7 @@ export function CardForm({
                 value="activate"
                 disabled={busy}
               >
+                <Icon name="check" size={18} />
                 {card.activated_at ? "Reactivar tarjeta" : "Guardar y activar"}
               </button>
             )}
@@ -232,6 +233,7 @@ export function CardForm({
                 disabled={busy}
                 onClick={() => dialog.current?.showModal()}
               >
+                <Icon name="trash" size={20} />
                 Eliminar tarjeta
               </button>
             </>
@@ -271,9 +273,11 @@ export function CardForm({
             disabled={busy}
             onClick={() => dialog.current?.close()}
           >
+            <Icon name="close" size={18} />
             Cancelar
           </button>
           <button className="danger" disabled={busy} onClick={remove}>
+            <Icon name="trash" size={20} />
             {busy ? "Eliminando…" : "Eliminar tarjeta"}
           </button>
         </div>

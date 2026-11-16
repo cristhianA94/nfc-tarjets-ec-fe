@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "./icon";
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/private-link";
 import { api } from "@/lib/client-api";
@@ -74,6 +75,7 @@ export function ClientPicker({
         disabled={busy}
         onClick={() => setRequest({ q: search.trim() })}
       >
+        <Icon name="search" size={18} />
         {busy ? "Buscando…" : "Buscar clientes"}
       </button>
       <label>
