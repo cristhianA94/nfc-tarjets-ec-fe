@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(),
+  getClaims: vi.fn(),
   signInWithPassword: vi.fn(),
   signOut: vi.fn(),
   maybeSingle: vi.fn(),
@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/supabase/server", () => ({
   serverClient: async () => ({
     auth: {
-      getUser: mocks.getUser,
+      getClaims: mocks.getClaims,
       signInWithPassword: mocks.signInWithPassword,
       signOut: mocks.signOut,
     },
@@ -35,17 +35,17 @@ beforeEach(() => {
 });
 describe("server authorization", () => {
   it("rejects missing or invalid identity", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    mocks.getClaims.mockResolvedValue({ data: { claims: null }, error: null });
     await expect(requireAdmin()).rejects.toMatchObject({ status: 401 });
     expect(mocks.from).not.toHaveBeenCalled();
   });
   it("rejects a valid user who is not explicitly an administrator", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: { id: "user" } } });
+    mocks.getClaims.mockResolvedValue({ data: { claims: { sub: "user" } } });
     mocks.maybeSingle.mockResolvedValue({ data: null });
     await expect(requireAdmin()).rejects.toMatchObject({ status: 403 });
   });
   it("accepts a verified administrator", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: { id: "admin" } } });
+    mocks.getClaims.mockResolvedValue({ data: { claims: { sub: "admin" } } });
     mocks.maybeSingle.mockResolvedValue({ data: { user_id: "admin" } });
     expect((await requireAdmin()).user.id).toBe("admin");
   });

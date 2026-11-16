@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
+  clientSchema,
   codeSchema,
   createCardSchema,
   updateCardSchema,
-  validReviewUrl,
+  validDestinationUrl,
   periodSchema,
   nextDay,
   pageNumber,
@@ -11,42 +12,42 @@ import {
 import { activationCsv, csvCell } from "@/lib/csv";
 import type { Card } from "@/lib/types";
 
-describe("Google Reviews allowlist", () => {
+describe("web destinations without a domain allowlist", () => {
   it.each([
-    "https://g.page/r/ABC_-12/review",
-    "https://g.page/r/ABC/review/",
-    "https://search.google.com/local/writereview?placeid=ChIJ123",
-    "https://maps.app.goo.gl/ABC123",
-    "https://maps.app.goo.gl/ABC?g_st=ic",
-  ])("accepts %s", (url) => expect(validReviewUrl(url)).toBe(true));
+    "https://example.com/menu?name=a%20b#section",
+    "http://example.org:8080/path",
+    "https://wa.me/123",
+    "https://g.page/r/a/review",
+    "http://localhost:3000/",
+    "http://[::1]:8080/menu",
+    "https://user:pass@example.com/path",
+  ])("accepts %s", (url) => expect(validDestinationUrl(url)).toBe(true));
   it.each([
     "",
-    "notaurl",
-    "http://g.page/r/a/review",
+    "not a url",
+    "//example.com",
+    "https://",
+    "https://example.com:99999/",
     "javascript:alert(1)",
-    "//g.page/r/a/review",
-    "https://evil.com",
-    "https://g.page.evil.com/r/a/review",
-    "https://evilg.page/r/a/review",
-    "https://g.page@evil.com/r/a/review",
-    "https://evil.com@g.page/r/a/review",
-    "https://g.page:444/r/a/review",
-    "https://g.page/r/a/review#x",
-    "https://g.page/r/a/review?url=https://evil.com",
-    "https://www.google.com/url?q=https://evil.com",
-    "https://search.google.com/local/writereview",
-    "https://search.google.com/local/writereview?placeid=x&placeid=y",
-    "https://search.google.com/local/writereview?placeid=x&next=evil",
-    "https://maps.app.goo.gl/",
-    "https://maps.app.goo.gl/a/b",
-    "https://maps.app.goo.gl/a?link=evil",
-  ])("rejects %s", (url) => expect(validReviewUrl(url)).toBe(false));
+    "data:text/html,test",
+    "file:///tmp/test",
+    "mailto:user@example.com",
+    "https://example.com/\r\nLocation:bad",
+  ])("rejects %s", (url) => expect(validDestinationUrl(url)).toBe(false));
+  it("preserves query encoding, repeated parameters and fragments", () => {
+    const url = "https://example.com/menu?name=a%20b&tag=x&tag=y#section";
+    expect(
+      clientSchema.parse({ business_name: "Local", google_review_url: url })
+        .google_review_url,
+    ).toBe(url);
+  });
 });
+
 describe("card invariants", () => {
   it("accepts optional fields on creation, rejects caller-controlled codes or status", () => {
     expect(createCardSchema.parse({})).toEqual({
-      business_name: null,
-      google_review_url: null,
+      client_id: null,
+      label: null,
       notes: null,
     });
     expect(createCardSchema.safeParse({ public_code: "ABCDEF" }).success).toBe(
@@ -56,29 +57,32 @@ describe("card invariants", () => {
       false,
     );
   });
-  it("requires both business and valid review link for activation", () => {
+  it("requires a client for activation and keeps shared fields out of cards", () => {
     expect(updateCardSchema.safeParse({ status: "ACTIVE" }).success).toBe(
       false,
     );
     expect(
-      updateCardSchema.safeParse({
-        status: "ACTIVE",
-        business_name: "  ",
-        google_review_url: "https://g.page/r/a/review",
-      }).success,
-    ).toBe(false);
-    expect(
       updateCardSchema.parse({
         status: "ACTIVE",
+        client_id: "11111111-1111-4111-8111-111111111111",
+      }).client_id,
+    ).toBeTruthy();
+    expect(createCardSchema.safeParse({ client_id: "invalid" }).success).toBe(
+      false,
+    );
+    expect(createCardSchema.safeParse({ label: "x".repeat(81) }).success).toBe(
+      false,
+    );
+    expect(
+      clientSchema.parse({
         business_name: " Café ",
         google_review_url: "https://g.page/r/a/review",
       }).business_name,
     ).toBe("Café");
     expect(
-      updateCardSchema.safeParse({
-        status: "ACTIVE",
+      clientSchema.safeParse({
         business_name: "Café",
-        google_review_url: "https://evil.com",
+        google_review_url: "javascript:alert(1)",
       }).success,
     ).toBe(false);
   });
@@ -86,7 +90,7 @@ describe("card invariants", () => {
     expect(
       updateCardSchema.safeParse({
         status: "SUSPENDED",
-        google_review_url: "https://evil.com",
+        google_review_url: "javascript:alert(1)",
       }).success,
     ).toBe(false);
     expect(

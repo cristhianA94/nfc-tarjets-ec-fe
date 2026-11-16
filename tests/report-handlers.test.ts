@@ -78,3 +78,22 @@ it("returns an error rather than exporting a partial dataset", async () => {
   m.range.mockResolvedValue({ error: { message: "offline" } });
   expect((await csv(request())).status).toBe(503);
 });
+
+it("handles a server row cap below the requested page size and only counts on the first page", async () => {
+  const card = (n: number) => ({
+    public_code: "CAP" + n,
+    business_name: "Negocio",
+    status: "ACTIVE",
+    activated_at: "2026-11-15T10:00:00Z",
+  });
+  m.range
+    .mockResolvedValueOnce({ data: [card(1), card(2)], count: 3 })
+    .mockResolvedValueOnce({ data: [card(3)], count: null });
+  const response = await csv(request());
+  expect(response.status).toBe(200);
+  expect(await response.text()).toContain("CAP3");
+  expect(m.range).toHaveBeenNthCalledWith(1, 0, 499);
+  expect(m.range).toHaveBeenNthCalledWith(2, 2, 501);
+  expect(m.activationQuery).toHaveBeenNthCalledWith(1, {}, {}, true);
+  expect(m.activationQuery).toHaveBeenNthCalledWith(2, {}, {}, false);
+});

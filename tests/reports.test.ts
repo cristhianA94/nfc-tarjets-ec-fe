@@ -2,43 +2,41 @@ import { describe, it, expect, vi } from "vitest";
 import { getReport, activationQuery } from "@/lib/reports";
 import type { SupabaseClient } from "@supabase/supabase-js";
 describe("reports", () => {
-  it("returns global status totals and filtered activation count independently", async () => {
-    const counts = [12, 5, 6, 1];
-    const from = vi.fn().mockImplementation(() => {
-      const count = counts.shift();
-      const result = {
-        count: count ?? 2,
-        data: count === undefined ? [{ public_code: "ABCDEF" }] : null,
-        error: null,
-      };
-      const q = {
-        select: () => q,
-        eq: () => Promise.resolve(result),
-        not: () => q,
-        gte: () => q,
-        lt: () => q,
-        order: () => q,
-        range: () => Promise.resolve(result),
-        then: (resolve: (r: typeof result) => void) =>
-          Promise.resolve(result).then(resolve),
-      };
-      return q;
-    });
-    const report = await getReport({ from } as unknown as SupabaseClient, {
-      from: "2026-11-01",
-      to: "2026-11-15",
-    });
-    expect(report).toMatchObject({
+  it("fetches totals and filtered activations in exactly one data request", async () => {
+    const data = {
       total: 12,
       available: 5,
       active: 6,
       suspended: 1,
       activations: 2,
-      pages: 1,
+      cards: [{ public_code: "ABCDEF" }],
+      page: 2,
+      pages: 3,
+    };
+    const rpc = vi.fn().mockResolvedValue({ data, error: null });
+    expect(
+      await getReport(
+        { rpc } as unknown as SupabaseClient,
+        { from: "2026-11-01", to: "2026-11-15" },
+        2,
+      ),
+    ).toEqual(data);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("get_card_report", {
+      p_from: "2026-11-01",
+      p_to: "2026-11-15",
+      p_page: 2,
     });
-    expect(report.cards).toHaveLength(1);
   });
-  it("uses UTC date boundaries and excludes unactivated cards", () => {
+  it("does not hide database errors as zero totals", async () => {
+    const rpc = vi
+      .fn()
+      .mockResolvedValue({ data: null, error: { message: "offline" } });
+    await expect(
+      getReport({ rpc } as unknown as SupabaseClient, {}),
+    ).rejects.toMatchObject({ status: 503 });
+  });
+  it("exports only needed columns, counting only when requested and using UTC boundaries", () => {
     const q = {
       select: vi.fn(),
       not: vi.fn(),
@@ -47,11 +45,12 @@ describe("reports", () => {
       order: vi.fn(),
     };
     Object.values(q).forEach((fn) => fn.mockReturnValue(q));
-    activationQuery({ from: () => q } as unknown as SupabaseClient, {
-      from: "2026-11-01",
-      to: "2026-11-15",
-    });
-    expect(q.not).toHaveBeenCalledWith("activated_at", "is", null);
+    const c = { from: () => q } as unknown as SupabaseClient;
+    activationQuery(c, { from: "2026-11-01", to: "2026-11-15" }, true);
+    expect(q.select).toHaveBeenLastCalledWith(
+      "public_code,business_name,label,activated_at,status",
+      { count: "exact" },
+    );
     expect(q.gte).toHaveBeenCalledWith(
       "activated_at",
       "2026-11-01T00:00:00.000Z",
@@ -59,6 +58,11 @@ describe("reports", () => {
     expect(q.lt).toHaveBeenCalledWith(
       "activated_at",
       "2026-11-16T00:00:00.000Z",
+    );
+    activationQuery(c, {});
+    expect(q.select).toHaveBeenLastCalledWith(
+      "public_code,business_name,label,activated_at,status",
+      {},
     );
   });
 });

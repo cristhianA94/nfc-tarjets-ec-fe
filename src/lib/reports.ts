@@ -1,15 +1,22 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cardColumns, type Card, type Report } from "./types";
+import type { Report } from "./types";
 import { nextDay } from "./validation";
 import { HttpError } from "./auth";
 export type Period = { from?: string; to?: string };
-export function activationQuery(client: SupabaseClient, period: Period) {
+export function activationQuery(
+  client: SupabaseClient,
+  period: Period,
+  includeCount = false,
+) {
   let q = client
     .from("cards")
-    .select(cardColumns, { count: "exact" })
+    .select(
+      "public_code,business_name,label,activated_at,status",
+      includeCount ? { count: "exact" } : {},
+    )
     .not("activated_at", "is", null);
-  if (period.from) q = q.gte("activated_at", `${period.from}T00:00:00.000Z`);
+  if (period.from) q = q.gte("activated_at", period.from + "T00:00:00.000Z");
   if (period.to) q = q.lt("activated_at", nextDay(period.to));
   return q.order("activated_at", { ascending: false }).order("public_code");
 }
@@ -18,26 +25,12 @@ export async function getReport(
   period: Period,
   page = 1,
 ): Promise<Report> {
-  const results = await Promise.all([
-    client.from("cards").select("id", { count: "exact", head: true }),
-    ...["AVAILABLE", "ACTIVE", "SUSPENDED"].map((status) =>
-      client
-        .from("cards")
-        .select("id", { count: "exact", head: true })
-        .eq("status", status),
-    ),
-    activationQuery(client, period).range((page - 1) * 25, page * 25 - 1),
-  ]);
-  if (results.some((r) => r.error))
+  const { data, error } = await client.rpc("get_card_report", {
+    p_from: period.from ?? null,
+    p_to: period.to ?? null,
+    p_page: page,
+  });
+  if (error || !data)
     throw new HttpError(503, "No se pudieron cargar los reportes.");
-  return {
-    total: results[0].count ?? 0,
-    available: results[1].count ?? 0,
-    active: results[2].count ?? 0,
-    suspended: results[3].count ?? 0,
-    activations: results[4].count ?? 0,
-    cards: (results[4].data ?? []) as Card[],
-    page,
-    pages: Math.max(1, Math.ceil((results[4].count ?? 0) / 25)),
-  };
+  return data as Report;
 }

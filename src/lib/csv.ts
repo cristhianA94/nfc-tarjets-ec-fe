@@ -8,10 +8,17 @@ export function activationCsv(cards: Card[]) {
   return (
     "\uFEFF" +
     [
-      ["Código", "Negocio", "Fecha de activación (UTC)", "Estado"],
+      [
+        "Código",
+        "Cliente",
+        "Identificación",
+        "Fecha de activación (UTC)",
+        "Estado",
+      ],
       ...cards.map((c) => [
         c.public_code,
         c.business_name,
+        c.label ?? null,
         c.activated_at,
         statusLabels[c.status],
       ]),

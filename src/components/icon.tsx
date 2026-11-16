@@ -13,11 +13,48 @@ export function Icon({
     | "copy"
     | "link"
     | "logout"
-    | "signal";
+    | "signal"
+    | "save"
+    | "trash"
+    | "check"
+    | "close"
+    | "filter"
+    | "reset"
+    | "download"
+    | "previous";
   size?: number;
   style?: CSSProperties;
 }) {
   const paths = {
+    save: (
+      <>
+        <path d="m19 21-14 0a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+        <path d="M7 3v6h9V3M7 21v-8h10v8" />
+      </>
+    ),
+    trash: (
+      <>
+        <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
+      </>
+    ),
+    check: <path d="m5 12 4 4L19 6" />,
+    close: <path d="m6 6 12 12M6 18 18 6" />,
+    filter: (
+      <>
+        <path d="M4 5h16l-6 7v7l-4 2v-9L4 5Z" />
+      </>
+    ),
+    reset: (
+      <>
+        <path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" />
+      </>
+    ),
+    download: (
+      <>
+        <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
+      </>
+    ),
+    previous: <path d="m15 5-7 7 7 7" />,
     cards: (
       <>
         <rect x="3" y="5" width="18" height="14" rx="3" />
@@ -77,6 +114,7 @@ export function Icon({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      focusable="false"
     >
       {paths[name]}
     </svg>

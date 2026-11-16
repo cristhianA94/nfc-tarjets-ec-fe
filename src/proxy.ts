@@ -26,8 +26,8 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  // Refresh and verify with Auth. Every private operation also checks admin_users.
-  await client.auth.getUser();
+  // Refresh page cookies. Route Handlers refresh their own cookies and verify claims.
+  await client.auth.getClaims();
   return response;
 }
-export const config = { matcher: ["/admin/:path*", "/api/admin/:path*"] };
+export const config = { matcher: ["/admin/:path*"] };

@@ -1,12 +1,12 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/private-link";
 import { useState, useEffect } from "react";
 import { api, dateLabel } from "@/lib/client-api";
 import { type Card, type CardStatus, statusLabels } from "@/lib/types";
 import { StatusBadge } from "./status-badge";
 import { Icon } from "./icon";
 type Result = { cards: Card[]; total: number; page: number; pages: number };
-export function CardList() {
+export function CardList({ clientId }: { clientId?: string }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState({ q: "", status: "", page: 1 });
   const [result, setResult] = useState<Result | null>(null);
@@ -14,12 +14,19 @@ export function CardList() {
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
   useEffect(() => {
+    if (!clientId) return;
+    const changed = () => setReload((n) => n + 1);
+    window.addEventListener("nfc:clients-changed", changed);
+    return () => window.removeEventListener("nfc:clients-changed", changed);
+  }, [clientId]);
+  useEffect(() => {
     const ctrl = new AbortController();
     async function load() {
       setBusy(true);
       setError("");
       try {
         const p = new URLSearchParams({
+          client_id: clientId ?? "",
           q: filter.q,
           status: filter.status,
           page: String(filter.page),
@@ -41,16 +48,21 @@ export function CardList() {
     }
     void load();
     return () => ctrl.abort();
-  }, [filter, reload]);
+  }, [filter, reload, clientId]);
   return (
     <>
       <div className="page-heading">
         <div>
           <span className="eyebrow">TU PUNTO DE CONEXIÓN</span>
-          <h1>Tarjetas NFC</h1>
+          <h1>{clientId ? "Tarjetas del cliente" : "Tarjetas NFC"}</h1>
           <p>Crea, activa y administra tus tarjetas en un solo lugar.</p>
         </div>
-        <Link className="button" href="/admin/tarjetas/nueva">
+        <Link
+          className="button"
+          href={
+            "/admin/tarjetas/nueva" + (clientId ? "?client_id=" + clientId : "")
+          }
+        >
           <Icon name="plus" size={18} />
           Nueva tarjeta
         </Link>
@@ -112,6 +124,7 @@ export function CardList() {
             ))}
           </select>
           <button className="secondary" type="submit">
+            <Icon name="search" size={18} />
             Buscar
           </button>
         </form>
@@ -123,6 +136,7 @@ export function CardList() {
               className="secondary"
               onClick={() => setReload((n) => n + 1)}
             >
+              <Icon name="reset" size={18} />
               Volver a intentar
             </button>
           </div>
@@ -146,7 +160,14 @@ export function CardList() {
                 : "Crea una tarjeta y copia su URL para programar el NFC."}
             </p>
             {!filter.q && !filter.status && (
-              <Link className="button" href="/admin/tarjetas/nueva">
+              <Link
+                className="button"
+                href={
+                  "/admin/tarjetas/nueva" +
+                  (clientId ? "?client_id=" + clientId : "")
+                }
+              >
+                <Icon name="plus" size={18} />
                 Crear primera tarjeta
               </Link>
             )}
@@ -177,7 +198,8 @@ export function CardList() {
                           {card.public_code}
                         </Link>
                         <span className="business-name">
-                          {card.business_name || "Sin negocio asignado"}
+                          {card.business_name || "Sin cliente asignado"}
+                          {card.label ? " · " + card.label : ""}
                         </span>
                       </td>
                       <td>
@@ -216,6 +238,7 @@ export function CardList() {
                     setFilter({ ...filter, page: filter.page - 1 })
                   }
                 >
+                  <Icon name="previous" size={18} />
                   Anterior
                 </button>
                 <button
@@ -226,6 +249,7 @@ export function CardList() {
                   }
                 >
                   Siguiente
+                  <Icon name="arrow" size={18} />
                 </button>
               </div>
             </div>

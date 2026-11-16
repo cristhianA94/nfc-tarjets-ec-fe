@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/private-link";
 import { api, dateLabel } from "@/lib/client-api";
 import type { Report } from "@/lib/types";
 import { StatusBadge } from "./status-badge";
@@ -80,7 +80,7 @@ export function Reports() {
           disabled={busy || downloading || !data}
           onClick={download}
         >
-          <Icon name="reports" size={18} />
+          <Icon name="download" size={18} />
           {downloading ? "Exportando…" : "Exportar CSV"}
         </button>
       </div>
@@ -134,6 +134,7 @@ export function Reports() {
             />
           </label>
           <button className="secondary" type="submit">
+            <Icon name="filter" size={18} />
             Aplicar filtro
           </button>
           <button
@@ -145,6 +146,7 @@ export function Reports() {
               setFilter({ from: "", to: "", page: 1 });
             }}
           >
+            <Icon name="reset" size={18} />
             Todo el periodo
           </button>
         </form>
@@ -155,6 +157,7 @@ export function Reports() {
               className="text-button"
               onClick={() => setReload((n) => n + 1)}
             >
+              <Icon name="reset" size={18} />
               Reintentar
             </button>
           </div>
@@ -214,6 +217,7 @@ export function Reports() {
                     setFilter({ ...filter, page: filter.page - 1 })
                   }
                 >
+                  <Icon name="previous" size={18} />
                   Anterior
                 </button>
                 <button
@@ -224,6 +228,7 @@ export function Reports() {
                   }
                 >
                   Siguiente
+                  <Icon name="arrow" size={18} />
                 </button>
               </div>
             </div>

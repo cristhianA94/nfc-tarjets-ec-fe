@@ -9,20 +9,33 @@ export async function GET(request: Request) {
     const { client } = await requireAdmin();
     const period = periodFromParams(new URL(request.url).searchParams);
     const cards: Card[] = [];
-    // Page explicitly so Supabase's per-request row limit does not truncate exports.
-    for (let start = 0; ; start += 500) {
+    let total: number | undefined;
+    // Count once; advance by actual rows so a lower server row cap cannot skip data.
+    for (let start = 0; ;) {
       const { data, error, count } = await activationQuery(
         client,
         period,
+        start === 0,
       ).range(start, start + 499);
       if (error) throw new HttpError(503, "No se pudo exportar el reporte.");
+      if (start === 0) {
+        if (count === null || count === undefined)
+          throw new HttpError(503, "No se pudo contar el reporte.");
+        total = count;
+        if (total > 100000)
+          throw new HttpError(
+            400,
+            "Selecciona un periodo más corto para exportar.",
+          );
+      }
       cards.push(...((data ?? []) as Card[]));
-      if (cards.length >= (count ?? 0) || !data?.length) break;
-      if (cards.length > 100000)
+      if (cards.length >= total!) break;
+      if (!data?.length)
         throw new HttpError(
-          400,
-          "Selecciona un periodo más corto para exportar.",
+          503,
+          "El reporte cambió durante la exportación. Vuelve a intentarlo.",
         );
+      start += data.length;
     }
     return new Response(activationCsv(cards), {
       headers: {

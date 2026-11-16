@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client-api";
@@ -45,17 +46,21 @@ export function LoginForm() {
             Administra tus tarjetas y conecta a cada negocio con sus reseñas de
             Google.
           </p>
-          <div className="decorative-card" aria-hidden="true">
-            <Icon name="signal" size={56} />
-            <div>
-              Tu opinión
-              <br />
-              cuenta.
-            </div>
-            <span>ACERCA TU CELULAR</span>
+          <div className="login-art">
+            <Image
+              src="/android-chrome-512x512.png"
+              width={512}
+              height={512}
+              alt="Logotipo de NexTap con ondas NFC y estrellas"
+              className="login-brand-art"
+              unoptimized
+            />
+            <span className="login-art-caption">
+              UNA MARCA. MUCHAS CONEXIONES.
+            </span>
           </div>
         </div>
-        <small>NFC · Gestión de tarjetas</small>
+        <small>NexTap · Gestión de tarjetas</small>
       </section>
       <section className="login-side">
         <form className="login-form" onSubmit={submit}>

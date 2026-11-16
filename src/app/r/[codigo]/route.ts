@@ -1,5 +1,5 @@
 import { publicClient } from "@/lib/supabase/public";
-import { codeSchema, validReviewUrl } from "@/lib/validation";
+import { codeSchema, validDestinationUrl } from "@/lib/validation";
 export const dynamic = "force-dynamic";
 const headers = {
   "Cache-Control": "no-store, max-age=0",
@@ -30,7 +30,7 @@ export async function GET(
     if (
       card.status === "ACTIVE" &&
       card.google_review_url &&
-      validReviewUrl(card.google_review_url)
+      validDestinationUrl(card.google_review_url)
     ) {
       return new Response(null, {
         status: 302,

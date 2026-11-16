@@ -8,6 +8,8 @@ export const statusLabels: Record<CardStatus, string> = {
 export type Card = {
   id: string;
   public_code: string;
+  client_id: string | null;
+  label: string | null;
   business_name: string | null;
   google_review_url: string | null;
   status: CardStatus;
@@ -17,7 +19,7 @@ export type Card = {
   updated_at: string;
 };
 export const cardColumns =
-  "id,public_code,business_name,google_review_url,status,notes,created_at,activated_at,updated_at";
+  "id,public_code,client_id,label,business_name,google_review_url,status,notes,created_at,activated_at,updated_at";
 export type Report = {
   total: number;
   available: number;
@@ -28,3 +30,15 @@ export type Report = {
   page: number;
   pages: number;
 };
+
+export type Client = {
+  id: string;
+  business_name: string;
+  google_review_url: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const cardListColumns =
+  "id,public_code,client_id,label,business_name,status,created_at,activated_at";

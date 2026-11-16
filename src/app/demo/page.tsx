@@ -71,7 +71,7 @@ export default function DemoPage() {
         </article>
       </section>
       <footer className="public-footer">
-        NFC · Conecta con la experiencia de tus clientes.
+        NexTap · Conecta con la experiencia de tus clientes.
       </footer>
     </main>
   );
